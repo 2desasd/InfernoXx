@@ -1,0 +1,188 @@
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = game.Players.LocalPlayer
+local gui = player:WaitForChild("PlayerGui")
+
+local screen = Instance.new("ScreenGui")
+screen.Name = "InfernoXGUI"
+screen.ResetOnSpawn = false
+screen.IgnoreGuiInset = true
+screen.Parent = gui
+
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 800, 0, 550)
+main.Position = UDim2.new(0.5, -400, 0.5, -275)
+main.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+main.BorderSizePixel = 0
+main.ClipsDescendants = true
+main.Parent = screen
+
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 16)
+
+local bgGradient = Instance.new("UIGradient")
+bgGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 60, 60)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(40, 40, 40)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 30, 30))
+}
+bgGradient.Rotation = 90
+bgGradient.Parent = main
+
+task.spawn(function()
+    while task.wait(0.05) and main.Parent do
+        bgGradient.Offset = Vector2.new(math.sin(tick() * 0.3) * 0.1, math.sin(tick() * 0.4) * 0.1)
+    end
+end)
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 4
+stroke.Color = Color3.fromRGB(255, 140, 0)
+stroke.Transparency = 0.3
+stroke.Parent = main
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -140, 0, 60)
+title.Position = UDim2.new(0, 140, 0, 10)
+title.BackgroundTransparency = 1
+title.Text = "Inferno X"
+title.TextColor3 = Color3.fromRGB(255, 140, 0)
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 36
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = main
+
+local minimize = Instance.new("TextButton")
+minimize.Size = UDim2.new(0, 50, 0, 50)
+minimize.Position = UDim2.new(1, -110, 0, 10)
+minimize.BackgroundTransparency = 1
+minimize.Text = "–"
+minimize.TextColor3 = Color3.fromRGB(180, 180, 180)
+minimize.Font = Enum.Font.GothamBold
+minimize.TextSize = 50
+minimize.Parent = main
+
+local closebtn = Instance.new("TextButton")
+closebtn.Size = UDim2.new(0, 50, 0, 50)
+closebtn.Position = UDim2.new(1, -50, 0, 10)
+closebtn.BackgroundTransparency = 1
+closebtn.Text = "X"
+closebtn.TextColor3 = Color3.fromRGB(220, 120, 120)
+closebtn.Font = Enum.Font.GothamBold
+closebtn.TextSize = 44
+closebtn.Parent = main
+
+local sidebar = Instance.new("Frame")
+sidebar.Size = UDim2.new(0, 140, 1, -80)
+sidebar.Position = UDim2.new(0, 0, 0, 80)
+sidebar.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+sidebar.BackgroundTransparency = 0.4
+sidebar.Parent = main
+Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 16)
+
+local sidebarLayout = Instance.new("UIListLayout")
+sidebarLayout.Padding = UDim.new(0, 10)
+sidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+sidebarLayout.Parent = sidebar
+
+local content = Instance.new("ScrollingFrame")
+content.Size = UDim2.new(1, -140, 1, -80)
+content.Position = UDim2.new(0, 140, 0, 80)
+content.BackgroundTransparency = 1
+content.ScrollBarThickness = 0
+content.Parent = main
+
+local currentPage = nil
+local tabButtons = {}
+
+local function switchTab(page, btn)
+    if currentPage then currentPage.Visible = false end
+    page.Visible = true
+    currentPage = page
+    for _, b in tabButtons do
+        TweenService:Create(b, TweenInfo.new(0.3), {BackgroundTransparency = 0.7}):Play()
+    end
+    TweenService:Create(btn, TweenInfo.new(0.3), {BackgroundTransparency = 0.3}):Play()
+end
+
+local function createTab(name)
+    local page = Instance.new("Frame")
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.BackgroundTransparency = 1
+    page.Visible = false
+    page.Parent = content
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -20, 0, 60)
+    btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    btn.BackgroundTransparency = 0.7
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 24
+    btn.Parent = sidebar
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
+
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 0.5}):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        if btn.BackgroundTransparency == 0.3 then return end
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 0.7}):Play()
+    end)
+
+    btn.MouseButton1Click:Connect(function() switchTab(page, btn) end)
+    table.insert(tabButtons, btn)
+    return page
+end
+
+local mainTab = createTab("Main")
+local playerTab = createTab("Player")
+local visualTab = createTab("Visual")
+local serverTab = createTab("Server")
+local settingsTab = createTab("Settings")
+
+local dragging = false
+local dragStart, startPos
+
+main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = main.Position
+    end
+end)
+
+main.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+local minimized = false
+minimize.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        TweenService:Create(main, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Size = UDim2.new(0, 800, 0, 80)}):Play()
+        minimize.Text = "+"
+    else
+        TweenService:Create(main, TweenInfo.new(0.6, Enum.EasingStyle.Back), {Size = UDim2.new(0, 800, 0, 550)}):Play()
+        minimize.Text = "–"
+    end
+end)
+
+closebtn.MouseButton1Click:Connect(function()
+    TweenService:Create(main, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {BackgroundTransparency = 1, Size = UDim2.new(0, 800, 0, 0)}):Play()
+    TweenService:Create(stroke, TweenInfo.new(0.4), {Transparency = 1}):Play()
+    task.wait(0.7)
+    screen:Destroy()
+end)
+
+switchTab(mainTab, tabButtons[1])
